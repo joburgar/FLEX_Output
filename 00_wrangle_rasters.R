@@ -21,11 +21,18 @@ print(raster_stack)
 # plot(raster_stack)
 
 # Load the polygon shapefile (SpatVector)
-GIS_Dir <- "//sfp.idir.bcgov/S140/S40203/Ecosystems/Conservation Science/Species Conservation Science/Mesocarnivores/Projects/MMP/2.Data/Mesocarnivores DB/5. GIS"
-# list.files(GIS_Dir) # check it works
+GIS_Boreal_Dir <- "//sfp.idir.bcgov/S140/S40203/Ecosystems/Conservation Science/Species/Mesocarnivores/Fisher_status/CDC_ESR/"
+
+Boreal <- sf::st_read(dsn = GIS_Boreal_Dir, layer = "Boreal_RE_2025")
+
+
+GIS_Columbian_Dir <- "//sfp.idir.bcgov/S140/S40203/Ecosystems/Conservation Science/Species/Mesocarnivores/Projects/MMP/2.Data/Mesocarnivores DB/5. GIS"
 subpopulations <- sf::st_read(dsn = file.path(GIS_Dir, "BC_Fisher_populations_2024.gdb"), layer = "Subpopulations")
 
-Boreal <- subpopulations |> dplyr::filter(Subpop == "Boreal")
+Cariboo <- subpopulations |> dplyr::filter(Subpop == "Cariboo")
+Chilcotin <- subpopulations |> dplyr::filter(Subpop == "Chilcotin")
+Omineca <- subpopulations |> dplyr::filter(Subpop == "Omineca")
+
 rm(subpopulations)# housekeeping
 # Find TSAs within Boreal
 
@@ -45,7 +52,6 @@ ggplot()+
 rm(tsa)# housekeeping
 
 Boreal_tsa %>% group_by(TSA_NUMBER) %>% summarise(sum(Area)) 
-
 
 Boreal_tsa_merged <- Boreal_tsa %>%
   group_by(TSA_NUMBER) %>%
@@ -67,19 +73,19 @@ Boreal_tsa %>% group_by(TSA_NUMBER) %>% count(TSA_NUMBER_DESCRIPTION) %>% sf::st
 rm(Boreal_tsa)
 
 # Ensure both have the same CRS
-crs(raster_stack) <- crs(Boreal_tsa_merged)  # Set CRS if needed
 
-FLEXraster <- function(tsa_merged) {
-  
-  # Filter TSA region
-  # aoi_filtered <- Boreal_tsa_merged %>% filter(TSA_NUMBER == "40")
-  aoi_filtered <- tsa_merged %>% filter(TSA_NUMBER == "41")
-  
-  # Clip and mask raster to AOI
-  clipped_raster <- crop(raster_stack, aoi_filtered)  # Crop to bounding box
-  clipped_raster <- mask(clipped_raster, aoi_filtered)  # Mask to exact shape
+terra::crs(raster_stack) <- "EPSG:3005"
+Boreal <- sf::st_transform(Boreal, crs = terra::crs(raster_stack))
 
-  # Load an example raster (assuming clipped_raster is already loaded)
+FLEXraster <- function(aoi) {
+  
+  aoi_filtered <- terra::vect(aoi)  # convert sf to SpatVector for terra compatibility
+  
+  # Crop and mask
+  clipped_raster <- terra::crop(raster_stack, aoi_filtered)
+  clipped_raster <- terra::mask(clipped_raster, aoi_filtered)
+  
+   # Load an example raster (assuming clipped_raster is already loaded)
   pixel_id <- clipped_raster[[1]]  # Use first layer as a template
   
   # Create a sequence of unique IDs for all pixels, including NA ones
@@ -123,10 +129,10 @@ FLEXraster <- function(tsa_merged) {
   return(new_order)
 }
 
-Boreal_DC <- FLEXraster(tsa_merged = Boreal_tsa_merged)
+Boreal_forFLEX <- FLEXraster(aoi = Boreal)
 
 # Save the  raster
-writeRaster(Boreal_DC, "Boreal_DC.tif", datatype = "INT4S",overwrite=TRUE) # for large rasters, need to provide data type
+writeRaster(Boreal_forFLEX, "Boreal_forFLEX.tif", datatype = "INT4S",overwrite=TRUE) # for large rasters, need to provide data type
 
 
 

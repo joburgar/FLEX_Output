@@ -27,13 +27,16 @@ if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 #####################################################################################
 
-FLEX_name <- "Boreal_Cassiar"
+Boreal_names <- c("Boreal_Cassiar","Boreal_DC", "Boreal_FN","Boreal_FSJ","Boreal_Mackenzie")
+
+FLEX_name <- "Quesnel"
 FLEX_dir <- "./Output_files/"
 list.files(paste0(FLEX_dir, FLEX_name))
 list.files(getwd())
 
 FLEX_files <- list.files(paste0(FLEX_dir, FLEX_name))
 FLEX_final_fisher_territories <- FLEX_files[grep("*final_fisher_territories", FLEX_files, ignore.case = FALSE)]
+# FLEX_final_fisher_territories <- FLEX_files[grep("_(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25)_.*final_fisher_territories", FLEX_files)]
 
 FLEX_list=list()
 hr_list = list()
