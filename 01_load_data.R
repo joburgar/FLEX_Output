@@ -28,8 +28,9 @@ lapply(list.of.packages, require, character.only = TRUE)
 #####################################################################################
 
 Boreal_names <- c("Boreal_Cassiar","Boreal_DC", "Boreal_FN","Boreal_FSJ","Boreal_Mackenzie")
+Columbian_names <- c("Cariboo","Chilcotin","Omineca")
 
-FLEX_name <- "Quesnel"
+FLEX_name <- "Boreal5"
 FLEX_dir <- "./Output_files/"
 list.files(paste0(FLEX_dir, FLEX_name))
 list.files(getwd())
@@ -76,9 +77,11 @@ FLEX_hr_sum %>% summarise(mean(mean_Areakm2), min(min_Areakm2), max(max_Areakm2)
 FLEX_stack = stack(FLEX_list)
 FLEX_sumstack <- stackApply(FLEX_stack, indices=1, fun=sum)
 plot(FLEX_sumstack)
-writeRaster(FLEX_sumstack, file=paste0(FLEX_dir, FLEX_name, "/", FLEX_name, "_stack.tif"), bylayer=TRUE)
+writeRaster(FLEX_sumstack, file=paste0(FLEX_dir, FLEX_name, "/", FLEX_name, "_stack.tif"), bylayer=TRUE, overwrite=TRUE)
 
 
+
+################################################################################
 # Reclassify values using a custom function
 r_new <- calc(FLEX_sumstack, function(x) {
   ifelse(x > 0 & x <= 50, 1,
@@ -87,7 +90,7 @@ r_new <- calc(FLEX_sumstack, function(x) {
 })
 plot(r_new)
 values(r_new)
-writeRaster(r_new, file=paste0(FLEX_dir, FLEX_name, "/", FLEX_name, "_VRI2021_LH.tif"), bylayer=TRUE)
+writeRaster(r_new, file=paste0(FLEX_dir, FLEX_name, "/", FLEX_name, "reclass.tif"), bylayer=TRUE)
 
 
 

@@ -24,16 +24,17 @@ print(raster_stack)
 GIS_Boreal_Dir <- "//sfp.idir.bcgov/S140/S40203/Ecosystems/Conservation Science/Species/Mesocarnivores/Fisher_status/CDC_ESR/"
 
 Boreal <- sf::st_read(dsn = GIS_Boreal_Dir, layer = "Boreal_RE_2025")
+Columbian <- sf::st_read(dsn = GIS_Boreal_Dir, layer = "Columbian_RE_2025")
 
 
-GIS_Columbian_Dir <- "//sfp.idir.bcgov/S140/S40203/Ecosystems/Conservation Science/Species/Mesocarnivores/Projects/MMP/2.Data/Mesocarnivores DB/5. GIS"
-subpopulations <- sf::st_read(dsn = file.path(GIS_Dir, "BC_Fisher_populations_2024.gdb"), layer = "Subpopulations")
-
-Cariboo <- subpopulations |> dplyr::filter(Subpop == "Cariboo")
-Chilcotin <- subpopulations |> dplyr::filter(Subpop == "Chilcotin")
-Omineca <- subpopulations |> dplyr::filter(Subpop == "Omineca")
-
-rm(subpopulations)# housekeeping
+# GIS_Columbian_Dir <- "//sfp.idir.bcgov/S140/S40203/Ecosystems/Conservation Science/Species/Mesocarnivores/Projects/MMP/2.Data/Mesocarnivores DB/5. GIS"
+# subpopulations <- sf::st_read(dsn = file.path(GIS_Dir, "BC_Fisher_populations_2024.gdb"), layer = "Subpopulations")
+# 
+# Cariboo <- subpopulations |> dplyr::filter(Subpop == "Cariboo")
+# Chilcotin <- subpopulations |> dplyr::filter(Subpop == "Chilcotin")
+# Omineca <- subpopulations |> dplyr::filter(Subpop == "Omineca")
+# 
+# rm(subpopulations)# housekeeping
 # Find TSAs within Boreal
 
 # bcdc_search("tsa", res_format = "wms")
