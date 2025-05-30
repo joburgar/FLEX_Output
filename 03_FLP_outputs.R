@@ -213,28 +213,62 @@ ggplot(data = Q_NoHarvest) +
 # Ensure both have the same CRS
 Q_NoHarvest <- st_transform(Q_NoHarvest, crs = st_crs(Q_chilcotin_reclass))
 
+# Original buffers (may overlap)
+buffers <- st_buffer(Q_NoHarvest, dist = 2000, nQuadSegs = 60)
+
+# Remove overlaps: process one-by-one
+buffers_no_overlap <- list()
+
+for (i in seq_len(nrow(buffers))) {
+  this_poly <- buffers[i, ]
+  
+  if (i == 1) {
+    # First polygon is added as-is
+    buffers_no_overlap[[i]] <- this_poly
+  } else {
+    # Subtract all previous polygons from the current one
+    previous <- do.call(rbind, buffers_no_overlap)
+    this_poly$geometry <- st_difference(this_poly$geometry, st_union(previous))
+    buffers_no_overlap[[i]] <- this_poly
+  }
+}
+
+# Combine into a single sf object
+buffers_no_overlap_sf <- do.call(rbind, buffers_no_overlap)
+
+# Plot
+ggplot() +
+  geom_sf(data = buffers_no_overlap_sf, aes(fill = VOITpot), alpha = 0.6, color = "black") +
+  geom_sf(data = Q_NoHarvest, fill = NA, color = "grey40", linetype = "dashed") +
+  labs(title = "Non-overlapping Buffered Polygons",
+       fill = "VOIT Potential")
+
+
+###################################################
 # Filter to fisher region of interest
-aoi_filtered <- Q_NoHarvest
+aoi_filtered <- buffers_no_overlap_sf
+aoi_filtered <- st_transform(aoi_filtered, crs = st_crs(Q_cariboo_reclass))
+
 
 # Clip and mask raster to AOI
-clipped_raster <- crop(Q_chilcotin_reclass, aoi_filtered)  # Crop to bounding box
+clipped_raster <- crop(Q_cariboo_reclass, aoi_filtered)  # Crop to bounding box
 clipped_raster <- mask(clipped_raster, aoi_filtered)  # Mask to exact shape
 
 plot(clipped_raster)
 
 ###--- Export as both rasters and polygon shapefiles
 # Define file paths for output
-raster_output_path <- "Q_chilcotin_reclass.tif"
-polygon_output_path <- "Q_chilcotin_reclass.shp"
+raster_output_path <- "Q_cariboo_reclass.tif"
+polygon_output_path <- "Q_cariboo_reclass.shp"
 
 # Export reclassified raster
 writeRaster(clipped_raster, raster_output_path, overwrite=TRUE, datatype="INT2S")
 
 # Convert raster to polygons (vectorize)
-Q_chilcotin_polygon <- as.polygons(clipped_raster, trunc=TRUE, dissolve=TRUE)
+Q_cariboo_polygon <- as.polygons(clipped_raster, trunc=TRUE, dissolve=TRUE)
 
 # Export as shapefile
-writeVector(Q_chilcotin_polygon, polygon_output_path, overwrite=TRUE)
+writeVector(Q_cariboo_polygon, polygon_output_path, overwrite=TRUE)
 
 
 
