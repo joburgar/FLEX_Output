@@ -36,13 +36,12 @@ lapply(list.of.packages, require, character.only = TRUE)
 # aoi_filtered <- Quesnel_merged
 
 
-### Nazko area
-Nazko <- sf::st_read(dsn="//sfp.idir.bcgov/S140/S40203/Ecosystems/Conservation Science/Species/Mesocarnivores/Projects/FLM/2. Data/2.1 GIS",
+### Area of Interest
+aoi <- sf::st_read(dsn="//sfp.idir.bcgov/S140/S40203/Ecosystems/Conservation Science/Species/Mesocarnivores/Projects/FLM/2. Data/2.1 GIS",
                      layer="clip_v3_merge")
 ggplot()+
-  geom_sf(data=Nazko)
+  geom_sf(data=aoi)
 
-aoi_filtered <- Nazko
 
 FLEX_name <- "Omineca"
 FLEX_dir <- "./Output_files/"
@@ -59,8 +58,8 @@ hr_list = list()
 for(i in 1:length(FLEX_final_fisher_territories)){
   # i=1
   rFLEX <- raster(paste0(FLEX_dir, FLEX_name, "/", FLEX_final_fisher_territories[i]))
-  clipped_rFLEX <- crop(rFLEX, aoi_filtered)  # Crop to bounding box
-  clipped_rFLEX <- mask(clipped_rFLEX, aoi_filtered)  # Mask to exact shape
+  clipped_rFLEX <- crop(rFLEX, aoi)  # Crop to bounding box
+  clipped_rFLEX <- mask(clipped_rFLEX, aoi)  # Mask to exact shape
 
   
   plot(clipped_rFLEX)
@@ -92,23 +91,22 @@ FLEX_hr_sum %>% summarise(mean(countHR), min(countHR), max(countHR))
 FLEX_hr_sum %>% summarise(mean(mean_Areakm2), min(min_Areakm2), max(max_Areakm2))
 
 
-# clip each raster to the Nazko shapefile
+# clip each raster to the aoi shapefile
 # Ensure both have the same CRS
 
 # Filter to fisher region of interest
-aoi_filtered <- Nazko
 FLEXraster <- rast(paste0(getwd(),"/Omineca5_stack.tif"))
 
 # Clip and mask raster to AOI
-clipped_raster <- crop(FLEXraster, aoi_filtered)  # Crop to bounding box
-clipped_raster <- mask(clipped_raster, aoi_filtered)  # Mask to exact shape
+clipped_raster <- crop(FLEXraster, aoi)  # Crop to bounding box
+clipped_raster <- mask(clipped_raster, aoi)  # Mask to exact shape
 
 plot(clipped_raster)
 
 
-writeRaster(clipped_raster, "Nazko_Cariboo.tif", datatype = "INT4S",overwrite=TRUE) # for large rasters, need to provide data type
-writeRaster(clipped_raster, "Nazko_Chilcotin.tif", datatype = "INT4S",overwrite=TRUE) # for large rasters, need to provide data type
-writeRaster(clipped_raster, "Nazko_Omineca.tif", datatype = "INT4S",overwrite=TRUE) # for large rasters, need to provide data type
+# writeRaster(clipped_raster, "Nazko_Cariboo.tif", datatype = "INT4S",overwrite=TRUE) # for large rasters, need to provide data type
+# writeRaster(clipped_raster, "Nazko_Chilcotin.tif", datatype = "INT4S",overwrite=TRUE) # for large rasters, need to provide data type
+# writeRaster(clipped_raster, "Nazko_Omineca.tif", datatype = "INT4S",overwrite=TRUE) # for large rasters, need to provide data type
 
 #####################################################################################
 #####################################################################################
