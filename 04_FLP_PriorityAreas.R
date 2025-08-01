@@ -104,7 +104,9 @@ ggplot()+
 # now use the TSA boundary as the aoi for all other queries
 aoi <- Q_tsa_dissolved %>% st_transform(3005)
 
+#### Areas to co-locate (i.e., other constraints on landbase)
 ### OGMAs
+# bcdc_search("OGMA", res_format = "wms")
 # 1: Old Growth Management Areas - Legal - Current (multiple, wms, kml, csv)
 # ID: 1b30f3bd-0ad0-4128-916b-66c6dd91dea4
 # Name: old-growth-management-areas-legal-current
@@ -113,3 +115,57 @@ aoi.OGMA <- retrieve_geodata_aoi(ID = "1b30f3bd-0ad0-4128-916b-66c6dd91dea4")
 ggplot()+
   geom_sf(data = aoi)+
   geom_sf(data = aoi.OGMA)
+
+
+### WHAs
+bcdc_search("WHA", res_format = "wms")
+# 2: Wildlife Habitat Areas - Approved (multiple, wms, kml)
+# ID: b19ff409-ef71-4476-924e-b3bcf26a0127
+# Name: wildlife-habitat-areas-approved
+aoi.WHA <- retrieve_geodata_aoi(ID = "b19ff409-ef71-4476-924e-b3bcf26a0127")
+
+ggplot()+
+  geom_sf(data = aoi)+
+  geom_sf(data = aoi.WHA)
+
+### UWR
+bcdc_search("UWR", res_format = "wms")
+# 2: Ungulate Winter Range - Approved (multiple, wms, kml)
+# ID: 712bd887-7763-4ed3-be46-cdaca5640cc1
+# Name: ungulate-winter-range-approved
+aoi.UWR <- retrieve_geodata_aoi(ID = "712bd887-7763-4ed3-be46-cdaca5640cc1")
+
+ggplot()+
+  geom_sf(data = aoi)+
+  geom_sf(data = aoi.UWR)
+
+### Old growth deferral
+bcdc_search("deferral", res_format = "wms")
+# 2: Old Growth Technical Advisory Panel (TAP) - Priority Deferral Areas - Current
+# View (multiple, other, wms, kml, arcgis_rest)
+# ID: f257ca4a-0c33-4eb2-9da8-21dff4482f58
+# Name:
+aoi.OGD <- retrieve_geodata_aoi(ID = "f257ca4a-0c33-4eb2-9da8-21dff4482f58")
+
+ggplot()+
+  geom_sf(data = aoi)+
+  geom_sf(data = aoi.OGD)
+
+
+all_colocate <- list(
+  OGMA = aoi.OGMA,
+  WHA = aoi.WHA,
+  UWR = aoi.UWR,
+  OGD = aoi.OGD
+)
+
+# Save as an .RDS file
+saveRDS(all_contraints, "Q_colocate.rds")
+
+
+#### Areas to remove (i.e., challenging to conserve)
+
+bbox <- st_bbox(aoi)
+filtered_data <- bcdc_query_geodata(ID) %>%
+  filter(BBOX = bbox) %>%
+  collect()
