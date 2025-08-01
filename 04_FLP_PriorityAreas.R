@@ -100,7 +100,8 @@ Q_tsa_dissolved <- Q_tsa %>%
 
 ggplot()+
   geom_sf(data=Q_tsa_dissolved)
-  
+
+rm(Q_tsa)
 # now use the TSA boundary as the aoi for all other queries
 aoi <- Q_tsa_dissolved %>% st_transform(3005)
 
@@ -151,21 +152,62 @@ ggplot()+
   geom_sf(data = aoi)+
   geom_sf(data = aoi.OGD)
 
+### Provincial Parks
+bcdc_search("protected areas", res_format = "wms")
+# 8: BC Parks, Ecological Reserves, and Protected Areas (wms, kml, multiple)
+# ID: 1130248f-f1a3-4956-8b2e-38d29d3e4af7
+# Name: bc-parks-ecological-reserves-and-protected-areas
+aoi.PA <- retrieve_geodata_aoi(ID = "1130248f-f1a3-4956-8b2e-38d29d3e4af7")
 
+ggplot()+
+  geom_sf(data = aoi)+
+  geom_sf(data = aoi.PA)
+
+### save co-location sf objects in one place
 all_colocate <- list(
   OGMA = aoi.OGMA,
   WHA = aoi.WHA,
   UWR = aoi.UWR,
-  OGD = aoi.OGD
+  OGD = aoi.OGD,
+  PA = aoi.PA
 )
 
 # Save as an .RDS file
-saveRDS(all_contraints, "Q_colocate.rds")
-
+saveRDS(all_colocate, "Q_colocate.rds")
 
 #### Areas to remove (i.e., challenging to conserve)
+### burn severity
+bcdc_search("burn severity", res_format = "wms")
+# 1: Fire Burn Severity - Historical (wms, kml, multiple)
+# ID: c58a54e5-76b7-4921-94a7-b5998484e697
+# Name: fire-burn-severity-historical
+# 2: Fire Burn Severity - Same Year (multiple, wms, kml, fgdb)
+# ID: 04c5ad28-d8eb-4c49-90c5-48b9b98fdfe9
+# Name: fire-burn-severity-same-year
+aoi.burn2024 <- retrieve_geodata_aoi(ID = "04c5ad28-d8eb-4c49-90c5-48b9b98fdfe9")
 
-bbox <- st_bbox(aoi)
-filtered_data <- bcdc_query_geodata(ID) %>%
-  filter(BBOX = bbox) %>%
-  collect()
+ggplot()+
+  geom_sf(data = aoi)+
+  geom_sf(data = aoi.burn2024)
+
+aoi.burnhist <- retrieve_geodata_aoi(ID = "c58a54e5-76b7-4921-94a7-b5998484e697")
+
+ggplot()+
+  geom_sf(data = aoi)+
+  geom_sf(data = aoi.burnhist)
+
+### save avoid sf objects in one place
+all_avoid <- list(
+  burn2024 = aoi.burn2024,
+  burnhist = aoi.burnhist
+)
+
+# Save as an .RDS file
+saveRDS(all_avoid, "Q_avoid.rds")
+
+
+## NEXT STEPS:
+# 1. ADD IN THE PARCEL MAP PRIVATE LAND FOR THE PRIORITY AREAS
+# 2. REFINE BASED ON AVOIDS (REMOVE ALL)
+# 3. KEEP ALL "GOOD HABITAT", ESPECIALLY IN AREAS OR CLOSE TO AREAS WITH COLOCATION
+# 4. REVIEW RORY'S NOTES FOR WHERE TO DELINEATE
