@@ -202,22 +202,32 @@ all_colocate <- readRDS("Q_colocate.rds")
 #   geom_sf(data = aoi)+
 #   geom_sf(data = aoi.burnhist)
 # 
+# bcdc_search("Forest Tenure Managed Licence", res_format = "wms")
+# # 1: Forest Tenure Managed Licence (multiple, wms, kml)
+# # ID: c3e96239-cdc9-4328-ac19-58fba1623ef8
+# # Name: forest-tenure-managed-licence
+# aoi.comfrst <- retrieve_geodata_aoi(ID = "c3e96239-cdc9-4328-ac19-58fba1623ef8")
+# ggplot()+
+#   geom_sf(data = aoi)+
+#   geom_sf(data = aoi.comfrst)
+# 
 # ### save avoid sf objects in one place
 # all_avoid <- list(
 #   burn2024 = aoi.burn2024,
 #   burnhist = aoi.burnhist
 # )
 # 
+# # now remove all low or unburned polygons
+# # only want to exclude the medium and high burn severity areas
+# all_avoid$burn2024 <- all_avoid$burn2024 %>% filter(BURN_SEVERITY_RATING %in% c("High","Medium"))
+# all_avoid$burnhist <- all_avoid$burnhist %>% filter(BURN_SEVERITY_RATING %in% c("High","Medium"))
+# 
+# all_avoid$private <- Q_private
+# all_avoid$comfrst <- aoi.comfrst
+
 # # Save as an .RDS file
 # saveRDS(all_avoid, "Q_avoid.rds")
 all_avoid <- readRDS("Q_avoid.rds")
-
-# now remove all low or unburned polygons
-# only want to exclude the medium and high burn severity areas
-all_avoid$burn2024 <- all_avoid$burn2024 %>% filter(BURN_SEVERITY_RATING %in% c("High","Medium"))
-all_avoid$burnhist <- all_avoid$burnhist %>% filter(BURN_SEVERITY_RATING %in% c("High","Medium"))
-
-all_avoid$private <- Q_private
 
 # ########################################################
 # ## 2. REFINE BASED ON AVOIDS (REMOVE ALL)
@@ -228,25 +238,25 @@ all_avoid$private <- Q_private
 # 
 # avoid_rasters <- lapply(names(all_avoid), function(name) {
 #   sf_obj <- all_avoid[[name]]
-#   
+# 
 #   # Skip NULL entries
 #   if (is.null(sf_obj)) {
 #     warning(paste("Skipping", name, "- is NULL"))
 #     return(NULL)
 #   }
-#   
+# 
 #   # Proceed with cleaning and rasterizing
 #   sf_obj <- st_make_valid(sf_obj)
 #   sf_obj <- st_cast(sf_obj, "POLYGON", warn = FALSE)
 #   sf_obj$field <- 1L
-#   
+# 
 #   v <- tryCatch(vect(sf_obj), error = function(e) {
 #     warning(paste("Skipping", name, "- vect() failed:", e$message))
 #     return(NULL)
 #   })
-#   
+# 
 #   if (is.null(v)) return(NULL)
-#   
+# 
 #   r <- rasterize(v, rQ, field = "field", background = 0)
 #   names(r) <- name
 #   return(r)
@@ -266,80 +276,80 @@ all_avoid$private <- Q_private
 # Q_clean <- mask(rQ, keep_mask, maskvalues = 0)
 # 
 # # Plot
-# plot(Q_clean, main = "rQ excluding burned areas")
+# plot(Q_clean, main = "rQ excluding burned areas and community forests")
 # # writeRaster(Q_clean, "Q_keep_Chilcotin.tif", overwrite=T)
-# writeRaster(Q_clean, "Q_keep_Cariboo.tif", overwrite=T)
+# # writeRaster(Q_clean, "Q_keep_Cariboo.tif", overwrite=T)
 
 Q_keep_Cariboo <- rast(paste0(getwd(),"/Q_keep_Cariboo.tif"))
-Q__keep_Chilcotin <- rast(paste0(getwd(),"/Q_keep_Chilcotin.tif"))
+Q_keep_Chilcotin <- rast(paste0(getwd(),"/Q_keep_Chilcotin.tif"))
 plot(Q__keep_Chilcotin)
 
 # #########################################################
 # # 3. NOW DETERMINE WHERE VALUES CO-LOCATE
 # 
-# # Q_clean <- Q_keep_Cariboo
+Q_clean <- Q_keep_Cariboo
 # Q_clean <- Q__keep_Chilcotin
-# 
-# all_colocate <- lapply(all_colocate, function(x) st_transform(x, crs(rQ)))
-# 
-# # Clean and rasterize each sf object safely
-# raster_list <- lapply(names(all_colocate), function(name) {
-#   sf_obj <- all_colocate[[name]]
-#   
-#   # Ensure valid geometry
-#   sf_obj <- st_make_valid(sf_obj)
-#   
-#   # Force to polygons if needed (avoid MULTIPOLYGON or GEOMETRYCOLLECTION)
-#   sf_obj <- st_cast(sf_obj, "POLYGON", warn = FALSE)
-#   
-#   # Add a dummy field (ensure same length as geometries)
-#   sf_obj$field <- 1L
-#   
-#   # Convert to terra SpatVector
-#   v <- tryCatch(vect(sf_obj), error = function(e) NULL)
-#   
-#   if (is.null(v)) {
-#     warning(paste("Skipping", name, "- could not convert to SpatVector"))
-#     return(NULL)
-#   }
-#   
-#   # Rasterize
-#   r <- rasterize(v, Q_clean, field = "field", background = 0)
-#   names(r) <- name
-#   return(r)
-# })
-# 
-# # Remove any failed/NULL layers
-# raster_list <- Filter(Negate(is.null), raster_list)
-# 
-# # Stack and sum
-# overlap_stack <- rast(raster_list)
-# overlap_count <- sum(overlap_stack, na.rm = TRUE)
-# 
-# # Plot
-# plot(overlap_count, main = "Number of overlapping layers per pixel")
-# 
-# # Create a mask for high values
-# high_value <- Q_clean > 15
-# 
-# # Create a mask for areas with >1 overlapping feature
-# overlap_mask <- overlap_count > 0
-# 
-# # Combine the two masks (logical AND)
-# priority_areas <- high_value & overlap_mask
-# 
-# # Plot the result
-# plot(priority_areas, main = "High rQ & Overlapping Features")
-# 
-# # Optional: mask Q_clean itself to visualize the values in those areas
-# Q_selected <- mask(Q_clean, priority_areas, maskvalues = 0)
-# plot(Q_selected, main = "rQ Values in Overlapping Areas")
-# 
-# plot(Q_cariboo)
-# plot(Q_chilcotin)
-# 
-# # Export the result
-# # writeRaster(Q_selected, "Q_selected_Cariboo.tif", overwrite=T)
+
+all_colocate <- lapply(all_colocate, function(x) st_transform(x, crs(rQ)))
+
+# Clean and rasterize each sf object safely
+raster_list <- lapply(names(all_colocate), function(name) {
+  sf_obj <- all_colocate[[name]]
+
+  # Ensure valid geometry
+  sf_obj <- st_make_valid(sf_obj)
+
+  # Force to polygons if needed (avoid MULTIPOLYGON or GEOMETRYCOLLECTION)
+  sf_obj <- st_cast(sf_obj, "POLYGON", warn = FALSE)
+
+  # Add a dummy field (ensure same length as geometries)
+  sf_obj$field <- 1L
+
+  # Convert to terra SpatVector
+  v <- tryCatch(vect(sf_obj), error = function(e) NULL)
+
+  if (is.null(v)) {
+    warning(paste("Skipping", name, "- could not convert to SpatVector"))
+    return(NULL)
+  }
+
+  # Rasterize
+  r <- rasterize(v, Q_clean, field = "field", background = 0)
+  names(r) <- name
+  return(r)
+})
+
+# Remove any failed/NULL layers
+raster_list <- Filter(Negate(is.null), raster_list)
+
+# Stack and sum
+overlap_stack <- rast(raster_list)
+overlap_count <- sum(overlap_stack, na.rm = TRUE)
+
+# Plot
+plot(overlap_count, main = "Number of overlapping layers per pixel")
+
+# Create a mask for high values
+high_value <- Q_clean > 15
+
+# Create a mask for areas with >1 overlapping feature
+overlap_mask <- overlap_count > 0
+
+# Combine the two masks (logical AND)
+priority_areas <- high_value & overlap_mask
+
+# Plot the result
+plot(priority_areas, main = "High rQ & Overlapping Features")
+
+# Optional: mask Q_clean itself to visualize the values in those areas
+Q_selected <- mask(Q_clean, priority_areas, maskvalues = 0)
+plot(Q_selected, main = "rQ Values in Overlapping Areas")
+
+plot(Q_cariboo)
+plot(Q_chilcotin)
+
+# Export the result
+writeRaster(Q_selected, "Q_selected_Cariboo.tif", overwrite=T)
 # writeRaster(Q_selected, "Q_selected_Chilcotin.tif", overwrite=T)
 
 Q_selected_Cariboo <- rast(paste0(getwd(),"/Q_selected_Cariboo.tif"))
@@ -351,7 +361,7 @@ Q_general_areas <- sf::st_read(dsn = DSN, layer="Q_general_areas")
 
 # Assume:
 # - r1 is your primary raster
-r1 <- Q__keep_Chilcotin
+r1 <- Q_keep_Cariboo
 plot(r1)
 
 plot(Q_keep_Chilcotin)
@@ -490,4 +500,4 @@ total_area / 10000
 # Area 2 = 24984 ha 249.84 km2 for high priority
 # Area 3 = 12751 ha 127.51 km2 for high priority
 # Area 6 = 27137 ha or 271.37 km2 for high priority
-# Area 91011 = 65696 or 656.96 km2 ha for high priority
+# Area 91011 = 44789 or 447.89 km2 ha for high priority
